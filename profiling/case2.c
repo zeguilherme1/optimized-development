@@ -1,6 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
-#define N 100
+#define N 1000
 
 int** createMatrix(int rows, int cols) {
 	int **matrix = (int**)malloc(rows * sizeof(int*));
