@@ -216,69 +216,17 @@ adotadas as seguintes medidas de controle de variabilidade:
   \item \valReplicas{} réplicas por célula, atendendo ao mínimo de dez do enunciado.
 \end{itemize}
 
-\subsection{Nomenclatura dos eventos em CPU híbrida}
+Duas observações são necessárias para interpretar corretamente os números que seguem.
 
-A máquina de medição tem microarquitetura híbrida, com dois PMUs distintos,
-\texttt{cpu\_core} para os núcleos de desempenho e \texttt{cpu\_atom} para os de
-eficiência. A documentação do \texttt{perf-stat} adverte que um evento disponível nos dois
-PMUs faz o \texttt{perf} criar \emph{dois} eventos automaticamente, um por PMU. Como as
-execuções são fixadas em um núcleo de desempenho, o evento gêmeo do \texttt{cpu\_atom}
-nunca é escalonado e retorna \texttt{<not counted>}, valor que um analisador ingênuo leria
-como zero. Por isso todos os eventos foram qualificados explicitamente como
-\texttt{cpu\_core/EVENTO/}.
+\textbf{As oito variantes calculam o mesmo produto.} Isso foi verificado de duas formas
+independentes, e é o que torna a comparação entre células legítima. O
+Apêndice~\ref{ap:validade} traz o procedimento.
 
-Além disso, nesta máquina os aliases \texttt{L1-dcache-*} não aparecem em
-\texttt{perf list}, porque são eventos legados do tipo \texttt{PERF\_TYPE\_HW\_CACHE}
-codificados pelo próprio analisador do \texttt{perf} e não pelas tabelas de eventos do
-sistema. Para não depender de suposição sobre o que esses aliases realmente contam, foi
-feita uma validação cruzada contra os eventos nativos correspondentes, medindo a razão
-entre as duas contagens sobre a mesma carga.
-
-\begin{table}[H]
-\centering
-\caption{Validação cruzada dos aliases genéricos contra os eventos nativos.}
-\label{tab:eventos}
-\small
-\begin{tabular}{@{}llc@{}}
-\toprule
-\textbf{Alias usado} & \textbf{Evento nativo comparado} & \textbf{Razão} \\
-\midrule
-\input{analise/tex/tabela_eventos.tex}\\
-\bottomrule
-\end{tabular}
-\end{table}
-
-\begin{sloppypar}
-A razão unitária confirma que \texttt{L1-dcache-loads} é exatamente
-\texttt{mem\_inst\_retired.all\_loads} e que \texttt{branch-instructions} é exatamente
-\texttt{br\_inst\_retired.all\_branches}. Já
-\texttt{L1-dcache-load-misses} conta \valRazaoEvMisses{} vezes o valor de
-\texttt{mem\_load\_retired.l1\_miss}, ou seja \textbf{não} é o mesmo evento: mede algo
-mais amplo que apenas misses de load retirados. Essa é uma limitação declarada da
-métrica, e não altera as comparações entre células, porque o mesmo evento foi usado em
-todas as \valMedicoes{} medições.
-\end{sloppypar}
-
-\subsection{Verificação de validade da comparação}
-
-Comparar tempos entre oito variantes de código só faz sentido se as oito calcularem o
-mesmo resultado. Duas verificações independentes foram feitas.
-
-A primeira é interna ao conjunto de dados: cada execução imprime a soma dos $N^2$
-elementos de $C$, e as \valMedicoes{} medições reportam um único valor,
-\valChecksum. A segunda é mais forte e roda fora do caminho de medição: uma compilação
-paralela dos oito binários imprime a matriz $C$ completa, e o resumo criptográfico das
-oito saídas é idêntico. Essa segunda verificação compara todos os
-1.000.000 de elementos, e não apenas um resumo de 64~bits deles.
-
-Também foi verificado que todos os elementos de $C$ ficam dentro do intervalo analítico
-$[0,\ 65.025.000]$, limite superior dado por $N \cdot 255^2$, o que descarta transbordo
-de inteiro. Esse é um erro que os resumos concordantes \emph{não} detectariam, porque
-corromperia os oito kernels de forma idêntica.
-
-Por fim, o percentual de tempo com contador ativo foi 100\% nas \valMedicoes{} medições,
-o que comprova que nenhum valor sofreu multiplexação. Um contador multiplexado é escalado
-pelo \texttt{perf}, e o número resultante é extrapolação e não medição.
+\textbf{O evento \texttt{L1-dcache-load-misses} mede algo mais amplo que apenas misses
+de load de demanda} nesta máquina, por fator \valRazaoEvMisses{} em relação ao evento
+nativo equivalente. Como o mesmo evento foi usado em todas as \valMedicoes{} medições, as
+comparações entre células permanecem válidas, mas o valor absoluto não deve ser lido como
+taxa de miss de demanda. O Apêndice~\ref{ap:eventos} detalha a verificação.
 
 \section{Análise 1: comparação do tempo de resposta}
 \label{sec:analise1}
@@ -357,35 +305,6 @@ transformação reduz desvios sem reduzir tempo.
 Quanto ao Fator 2, a alocação dinâmica é em média \valRazaoAloc$\times$ mais lenta que a
 estática, e essa ordenação se mantém em todas as quatro técnicas.
 
-\subsection{Modelo fatorial completo, como suplemento}
-
-O enunciado pede apenas a comparação dos oito tempos, mas com os dados disponíveis é
-possível decompor a variação do tempo usando os quatro níveis de técnica ao mesmo tempo.
-A Tabela~\ref{tab:completo} traz esse modelo, ajustado sobre $\log_{10}$ do tempo porque
-a dispersão cresce com a média.
-
-\begin{table}[H]
-\centering
-\caption{Modelo fatorial completo $4\times2$ sobre $\log_{10}$ do tempo de resposta.
-Suplemento além das duas análises pedidas.}
-\label{tab:completo}
-\small
-\begin{tabular}{@{}lrrrrrr@{}}
-\toprule
-\textbf{Fonte} & \textbf{gl} & \textbf{SS} & \textbf{\%} & \textbf{MS} &
-\textbf{$F$} & \textbf{$p$} \\
-\midrule
-\input{analise/tex/tabela_modelo_completo.tex}\\
-\bottomrule
-\end{tabular}
-\end{table}
-
-A técnica responde por \valPctTec\% da variação do tempo e a alocação por
-\valPctAloc\%. A interação entre os dois responde por apenas \valPctInter\%, o que
-significa que, para o tempo, os dois fatores agem de forma quase aditiva: a escolha da
-melhor técnica é praticamente a mesma independentemente da alocação. O termo residual de
-\valPctResid\% é a variabilidade de execução da máquina.
-
 \section{Análise 2: influência dos fatores nas variáveis de cache e de branch}
 \label{sec:analise2}
 
@@ -437,30 +356,16 @@ são função quase determinística do fluxo de instruções executado.}
 \label{fig:contadores}
 \end{figure}
 
-Uma observação metodológica importante decorre da Figura~\ref{fig:contadores}. O
-coeficiente de variação de \texttt{L1-dcache-loads} não passa de \valCvLoadsMax\% e o de
-\texttt{branch-instructions} não passa de \valCvBrinstMax\%. Essas duas métricas são
-essencialmente determinísticas. Em consequência, o erro quadrático médio das análises
-que as envolvem é minúsculo, os valores de $F$ são enormes e praticamente todo valor de
-$p$ resulta inferior a $2\times10^{-16}$. \textbf{A significância estatística passa a ser
-garantida e portanto não informativa.} O que interpreta este experimento é o tamanho do
-efeito e a alocação percentual de variação, não a rejeição de hipótese nula. Esse ponto
-reaparece de forma concreta na Seção~\ref{sec:fat2}.
-
-\subsection{Validação das contagens contra forma fechada}
-
-Antes de interpretar, vale confirmar que os contadores medem o que se supõe. A contagem de
-instruções de branch é previsível analiticamente: o kernel base executa cerca de
-$N^3 + N^2 + N \approx \valBrinstPrevisto\times10^9$ desvios de condição de laço, e o
-desenrolamento de fator \valUnroll{} reduz o laço interno para cerca de
-$\valBrinstPrevistoUnroll\times10^9$.
-
-Os valores medidos são \valBrinstBase$\times10^9$ para a base,
-\valBrinstInter$\times10^9$ para o interchange, \valBrinstUnroll$\times10^9$ para o
-unrolling e \valBrinstTiling$\times10^9$ para o tiling. Os três primeiros ficam a poucos
-por cento da previsão, e o excedente do tiling corresponde ao custo de controle dos laços
-de bloco. Essa concordância prova que o mapeamento de evento está correto e que os valores
-não estão escalados.
+\begin{sloppypar}
+Uma observação metodológica decorre da Figura~\ref{fig:contadores}. O coeficiente de
+variação de \texttt{L1-dcache-loads} não passa de \valCvLoadsMax\% e o de
+\texttt{branch-instructions} não passa de \valCvBrinstMax\%, ou seja essas duas métricas
+são essencialmente determinísticas. O erro quadrático médio das análises que as envolvem
+fica minúsculo, os valores de $F$ ficam enormes e quase todo $p$ resulta inferior a
+$2\times10^{-16}$. \textbf{A significância estatística passa a ser garantida e portanto
+não informativa}, e o que interpreta este experimento é o tamanho do efeito e a alocação
+percentual de variação. A Seção~\ref{sec:fat2} traz um caso concreto disso.
+\end{sloppypar}
 
 \subsection{Análise de cache: experimentos 1, 2, 3 e 4}
 
@@ -529,6 +434,14 @@ irrelevante para a cache. Esse é o tipo exato de conclusão que um experimento 
 por vez não produziria: variando apenas a alocação com o kernel base, concluir-se-ia que
 a alocação tem forte influência sobre a cache, o que é falso para três das quatro
 técnicas.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.94\textwidth]{figuras/pareto_influencia.pdf}
+\caption{Influência percentual de cada termo nas duas análises. À esquerda a resposta de
+cache, à direita a de branch. Os quatro valores de cada painel somam 100\%.}
+\label{fig:pareto}
+\end{figure}
 
 \subsection{Contagem absoluta contra taxa}
 \label{sec:absoluto}
@@ -633,8 +546,10 @@ porque há menos desvios totais.
 \label{sec:pressupostos}
 
 As duas análises de variância pressupõem normalidade, homocedasticidade e independência
-dos resíduos. A Tabela~\ref{tab:pressupostos} apresenta os testes, e as
-Figuras~\ref{fig:res1} e~\ref{fig:res2} os diagnósticos gráficos correspondentes.
+dos resíduos. A Tabela~\ref{tab:pressupostos} apresenta os testes. Os diagnósticos
+gráficos, resíduo contra ajustado, gráfico quantil-quantil, escala-locação e resíduo contra
+ordem de execução, estão nas Figuras~\ref{fig:res1} e~\ref{fig:res2} do
+Apêndice~\ref{ap:robustez}.
 
 \begin{table}[H]
 \centering
@@ -650,19 +565,6 @@ Figuras~\ref{fig:res1} e~\ref{fig:res2} os diagnósticos gráficos correspondent
 \end{tabular}
 \end{table}
 
-\begin{figure}[H]
-\centering
-\includegraphics[width=0.88\textwidth]{figuras/residuos_fat1.pdf}
-\caption{Diagnóstico de resíduos da análise de cache.}
-\label{fig:res1}
-\end{figure}
-
-\begin{figure}[H]
-\centering
-\includegraphics[width=0.88\textwidth]{figuras/residuos_fat2.pdf}
-\caption{Diagnóstico de resíduos da análise de branch.}
-\label{fig:res2}
-\end{figure}
 
 \subsection{Independência: sustenta-se}
 
@@ -692,56 +594,13 @@ origem física: a variância da célula sem otimização é ordens de grandeza m
 célula com interchange, porque o passeio por coluna é sensível a interferência do sistema
 enquanto o acesso sequencial não é.
 
-Duas providências foram tomadas em vez de ignorar o problema.
-
-\textbf{Primeira, reanálise em escala logit.} As duas respostas são proporções, portanto o
-estabilizador de variância adequado é $\log(p/(1-p))$ e não o logaritmo simples. A
-Tabela~\ref{tab:logit} compara a alocação percentual nas duas escalas. O ponto essencial é
-que \textbf{a ordenação dos efeitos não muda} em nenhuma das duas análises, de modo que as
-conclusões da Seção~\ref{sec:analise2} são robustas à escolha de escala. Na análise de
-branch a transformação ainda corrige a heterocedasticidade, elevando o $p$ de
-Fligner-Killeen para \valFatDoisFlignerLogitP.
-
-\begin{table}[H]
-\centering
-\caption{Influência percentual em escala bruta e em escala logit.}
-\label{tab:logit}
-\small
-\begin{tabular}{@{}cl rr@{}}
-\toprule
-\textbf{Análise} & \textbf{Fonte} & \textbf{\% bruta} & \textbf{\% logit} \\
-\midrule
-\input{analise/tex/tabela_logit.tex}\\
-\bottomrule
-\end{tabular}
-\end{table}
-
-\textbf{Segunda, teste de permutação restrita de Freedman-Lane}, com 10.000 permutações.
-O procedimento permuta os resíduos do modelo reduzido, isto é do modelo sem o efeito sob
-teste mas com todos os outros. Permutar a resposta bruta seria incorreto, porque a
-hipótese nula absorveria a variância dos demais efeitos. O teste dispensa completamente o
-pressuposto de normalidade.
-
-\begin{table}[H]
-\centering
-\caption{Valores de $p$ da análise de variância e do teste de permutação de
-Freedman-Lane.}
-\label{tab:perm}
-\small
-\begin{tabular}{@{}clrrcc@{}}
-\toprule
-\textbf{Análise} & \textbf{Efeito} & \textbf{$p$ (ANOVA)} & \textbf{$p$ (permutação)} &
-\textbf{Signif. por IC} & \textbf{Signif. por permutação} \\
-\midrule
-\input{analise/tex/tabela_permutacao.tex}\\
-\bottomrule
-\end{tabular}
-\end{table}
-
-A concordância é total, \valFatUmPermConc{} de 3 efeitos na análise de cache e
-\valFatDoisPermConc{} de 3 na de branch. Os valores de $p$ da permutação rastreiam de
-perto os da análise de variância, inclusive no único efeito não significativo. O veredito
-de significância, portanto, não depende do pressuposto de normalidade que foi rejeitado.
+Nenhuma das duas rejeições invalida as conclusões da Seção~\ref{sec:analise2}. Com
+planejamento balanceado, as \emph{estimativas} de efeito são não viesadas qualquer que
+seja a distribuição do erro, e a normalidade afeta apenas a distribuição de referência dos
+testes. Ainda assim, duas verificações de robustez foram feitas em vez de simplesmente
+declarar o problema, uma reanálise em escala transformada e um teste que dispensa o
+pressuposto de normalidade. Ambas confirmam as conclusões e estão no
+Apêndice~\ref{ap:robustez}.
 
 \section{Conclusão}
 
@@ -814,7 +673,10 @@ estática, o experimento 3, que foi o mais rápido dos oito.
 
 \section{Reprodutibilidade}
 
-Todo o material está no repositório, no diretório \texttt{profiling}. Os dados brutos das
+\begin{sloppypar}
+Todo o material está no repositório
+\url{https://github.com/zeguilherme1/optimized-development}, no diretório
+\texttt{profiling}. Os dados brutos das
 \valMedicoes{} medições estão em \texttt{dados/dados\_brutos.csv}, com dicionário de
 colunas em \texttt{dados/dicionario.txt}. O ambiente completo de medição, incluindo modelo
 de processador, versões, estado do governador de frequência e resumos de verificação dos
@@ -822,6 +684,7 @@ binários, está em \texttt{dados/ambiente.txt}. A sondagem e o mapeamento dos e
 \texttt{perf} estão em \texttt{dados/eventos.txt}, e a ordem de execução sorteada em
 \texttt{dados/ordem\_execucao.txt}. A saída do \texttt{perf} de cada uma das
 \valMedicoes{} execuções foi preservada em \texttt{dados/perf/} como trilha de auditoria.
+\end{sloppypar}
 
 A coleta é reproduzida com \texttt{bash experimento/run\_experimento.sh} e a análise com
 \texttt{Rscript analise/analise.R}. Todos os valores numéricos citados neste texto são
@@ -835,5 +698,200 @@ que texto e dados não podem divergir.
 \noindent\small Para a correção ortográfica e a revisão de coesão deste texto foram
 utilizadas ferramentas de inteligência artificial. O experimento, as medições, a análise
 estatística e as conclusões são de autoria dos alunos.
+
+\appendix
+
+\section{Verificação de equivalência dos oito kernels}
+\label{ap:validade}
+
+Comparar tempos entre oito variantes de código só faz sentido se as oito calcularem o
+mesmo resultado. Duas verificações independentes foram feitas.
+
+A primeira é interna ao conjunto de dados: cada execução imprime a soma dos $N^2$
+elementos de $C$, e as \valMedicoes{} medições reportam um único valor,
+\valChecksum. A segunda é mais forte e roda fora do caminho de medição: uma compilação
+paralela dos oito binários imprime a matriz $C$ completa, e o resumo criptográfico das
+oito saídas é idêntico. Essa segunda verificação compara todos os
+1.000.000 de elementos, e não apenas um resumo de 64~bits deles.
+
+Também foi verificado que todos os elementos de $C$ ficam dentro do intervalo analítico
+$[0,\ 65.025.000]$, limite superior dado por $N \cdot 255^2$, o que descarta transbordo
+de inteiro. Esse é um erro que os resumos concordantes \emph{não} detectariam, porque
+corromperia os oito kernels de forma idêntica.
+
+Por fim, o percentual de tempo com contador ativo foi 100\% nas \valMedicoes{} medições,
+o que comprova que nenhum valor sofreu multiplexação. Um contador multiplexado é escalado
+pelo \texttt{perf}, e o número resultante é extrapolação e não medição.
+
+
+\section{Nomenclatura e validação dos eventos do \texttt{perf}}
+\label{ap:eventos}
+
+A máquina de medição tem microarquitetura híbrida, com dois PMUs distintos,
+\texttt{cpu\_core} para os núcleos de desempenho e \texttt{cpu\_atom} para os de
+eficiência. A documentação do \texttt{perf-stat} adverte que um evento disponível nos dois
+PMUs faz o \texttt{perf} criar \emph{dois} eventos automaticamente, um por PMU. Como as
+execuções são fixadas em um núcleo de desempenho, o evento gêmeo do \texttt{cpu\_atom}
+nunca é escalonado e retorna \texttt{<not counted>}, valor que um analisador ingênuo leria
+como zero. Por isso todos os eventos foram qualificados explicitamente como
+\texttt{cpu\_core/EVENTO/}.
+
+Além disso, nesta máquina os aliases \texttt{L1-dcache-*} não aparecem em
+\texttt{perf list}, porque são eventos legados do tipo \texttt{PERF\_TYPE\_HW\_CACHE}
+codificados pelo próprio analisador do \texttt{perf} e não pelas tabelas de eventos do
+sistema. Para não depender de suposição sobre o que esses aliases realmente contam, foi
+feita uma validação cruzada contra os eventos nativos correspondentes, medindo a razão
+entre as duas contagens sobre a mesma carga.
+
+\begin{table}[H]
+\centering
+\caption{Validação cruzada dos aliases genéricos contra os eventos nativos.}
+\label{tab:eventos}
+\small
+\begin{tabular}{@{}llc@{}}
+\toprule
+\textbf{Alias usado} & \textbf{Evento nativo comparado} & \textbf{Razão} \\
+\midrule
+\input{analise/tex/tabela_eventos.tex}\\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{sloppypar}
+A razão unitária confirma que \texttt{L1-dcache-loads} é exatamente
+\texttt{mem\_inst\_retired.all\_loads} e que \texttt{branch-instructions} é exatamente
+\texttt{br\_inst\_retired.all\_branches}. Já
+\texttt{L1-dcache-load-misses} conta \valRazaoEvMisses{} vezes o valor de
+\texttt{mem\_load\_retired.l1\_miss}, ou seja \textbf{não} é o mesmo evento: mede algo
+mais amplo que apenas misses de load retirados. Essa é uma limitação declarada da
+métrica, e não altera as comparações entre células, porque o mesmo evento foi usado em
+todas as \valMedicoes{} medições.
+\end{sloppypar}
+
+
+\section{Validação das contagens contra forma fechada}
+\label{ap:fechada}
+
+Antes de interpretar, vale confirmar que os contadores medem o que se supõe. A contagem de
+instruções de branch é previsível analiticamente: o kernel base executa cerca de
+$N^3 + N^2 + N \approx \valBrinstPrevisto\times10^9$ desvios de condição de laço, e o
+desenrolamento de fator \valUnroll{} reduz o laço interno para cerca de
+$\valBrinstPrevistoUnroll\times10^9$.
+
+Os valores medidos são \valBrinstBase$\times10^9$ para a base,
+\valBrinstInter$\times10^9$ para o interchange, \valBrinstUnroll$\times10^9$ para o
+unrolling e \valBrinstTiling$\times10^9$ para o tiling. Os três primeiros ficam a poucos
+por cento da previsão, e o excedente do tiling corresponde ao custo de controle dos laços
+de bloco. Essa concordância prova que o mapeamento de evento está correto e que os valores
+não estão escalados.
+
+
+\section{Modelo fatorial completo $4\times2$ para o tempo}
+\label{ap:modelo}
+
+As duas análises pedidas pelo enunciado usam planejamentos $2\times2$. Com os dados
+disponíveis é possível, adicionalmente, decompor a variação do tempo usando os quatro
+níveis de técnica ao mesmo tempo. Este apêndice registra esse modelo, que está além do
+que foi pedido.
+
+O enunciado pede apenas a comparação dos oito tempos, mas com os dados disponíveis é
+possível decompor a variação do tempo usando os quatro níveis de técnica ao mesmo tempo.
+A Tabela~\ref{tab:completo} traz esse modelo, ajustado sobre $\log_{10}$ do tempo porque
+a dispersão cresce com a média.
+
+\begin{table}[H]
+\centering
+\caption{Modelo fatorial completo $4\times2$ sobre $\log_{10}$ do tempo de resposta.
+Suplemento além das duas análises pedidas.}
+\label{tab:completo}
+\small
+\begin{tabular}{@{}lrrrrrr@{}}
+\toprule
+\textbf{Fonte} & \textbf{gl} & \textbf{SS} & \textbf{\%} & \textbf{MS} &
+\textbf{$F$} & \textbf{$p$} \\
+\midrule
+\input{analise/tex/tabela_modelo_completo.tex}\\
+\bottomrule
+\end{tabular}
+\end{table}
+
+A técnica responde por \valPctTec\% da variação do tempo e a alocação por
+\valPctAloc\%. A interação entre os dois responde por apenas \valPctInter\%, o que
+significa que, para o tempo, os dois fatores agem de forma quase aditiva: a escolha da
+melhor técnica é praticamente a mesma independentemente da alocação. O termo residual de
+\valPctResid\% é a variabilidade de execução da máquina.
+
+
+\section{Verificações de robustez dos pressupostos}
+\label{ap:robustez}
+
+A Seção~\ref{sec:pressupostos} rejeitou normalidade e homocedasticidade nas duas
+análises. Este apêndice registra as duas verificações feitas para confirmar que as
+conclusões não dependem desses pressupostos. Ambos os métodos aqui estão além do
+ferramental apresentado em aula, e entram como reforço e não como base das conclusões.
+
+\textbf{Primeira, reanálise em escala logit.} As duas respostas são proporções, portanto o
+estabilizador de variância adequado é $\log(p/(1-p))$ e não o logaritmo simples. A
+Tabela~\ref{tab:logit} compara a alocação percentual nas duas escalas. O ponto essencial é
+que \textbf{a ordenação dos efeitos não muda} em nenhuma das duas análises, de modo que as
+conclusões da Seção~\ref{sec:analise2} são robustas à escolha de escala. Na análise de
+branch a transformação ainda corrige a heterocedasticidade, elevando o $p$ de
+Fligner-Killeen para \valFatDoisFlignerLogitP.
+
+\begin{table}[H]
+\centering
+\caption{Influência percentual em escala bruta e em escala logit.}
+\label{tab:logit}
+\small
+\begin{tabular}{@{}cl rr@{}}
+\toprule
+\textbf{Análise} & \textbf{Fonte} & \textbf{\% bruta} & \textbf{\% logit} \\
+\midrule
+\input{analise/tex/tabela_logit.tex}\\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\textbf{Segunda, teste de permutação restrita de Freedman-Lane}, com 10.000 permutações.
+O procedimento permuta os resíduos do modelo reduzido, isto é do modelo sem o efeito sob
+teste mas com todos os outros. Permutar a resposta bruta seria incorreto, porque a
+hipótese nula absorveria a variância dos demais efeitos. O teste dispensa completamente o
+pressuposto de normalidade.
+
+\begin{table}[H]
+\centering
+\caption{Valores de $p$ da análise de variância e do teste de permutação de
+Freedman-Lane.}
+\label{tab:perm}
+\small
+\begin{tabular}{@{}clrrcc@{}}
+\toprule
+\textbf{Análise} & \textbf{Efeito} & \textbf{$p$ (ANOVA)} & \textbf{$p$ (permutação)} &
+\textbf{Signif. por IC} & \textbf{Signif. por permutação} \\
+\midrule
+\input{analise/tex/tabela_permutacao.tex}\\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.88\textwidth]{figuras/residuos_fat1.pdf}
+\caption{Diagnóstico de resíduos da análise de cache.}
+\label{fig:res1}
+\end{figure}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.88\textwidth]{figuras/residuos_fat2.pdf}
+\caption{Diagnóstico de resíduos da análise de branch.}
+\label{fig:res2}
+\end{figure}
+
+A concordância é total, \valFatUmPermConc{} de 3 efeitos na análise de cache e
+\valFatDoisPermConc{} de 3 na de branch. Os valores de $p$ da permutação rastreiam de
+perto os da análise de variância, inclusive no único efeito não significativo. O veredito
+de significância, portanto, não depende do pressuposto de normalidade que foi rejeitado.
+
 
 \end{document}
