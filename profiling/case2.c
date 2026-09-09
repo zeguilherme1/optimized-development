@@ -1,64 +1,71 @@
+#define _POSIX_C_SOURCE 200809L
+
 #include <stdio.h>
 #include <stdlib.h>
-#define N 1000
+#include <time.h>
+#include "utils.h"
 
-int** createMatrix(int rows, int cols) {
-	int **matrix = (int**)malloc(rows * sizeof(int*));
+/* =========================================================================
+ * case2.c - Tecnica: base | Alocacao: dinamica
+ *
+ * SSC0951 - Desenvolvimento de Codigo Otimizado
+ *
+ * Uma celula do planejamento fatorial 4x2. Os oito casos compartilham este
+ * mesmo esqueleto de main e diferem apenas no kernel chamado e na alocacao,
+ * que sao exatamente os dois fatores do experimento.
+ *
+ * Compilar: gcc -O0 -std=c11 -Wall -Wextra -Werror -o case2 case2.c utils.c
+ * Saida   : uma linha CSV, sem cabecalho
+ *   case_id,technique,allocation,n,block_size,unroll_factor,tempo_kernel_ns,checksum
+ * ========================================================================= */
 
-	for (int i = 0; i < rows; i++) {
-		matrix[i] = (int*)malloc(cols * sizeof(int));
-	}
-
-	return matrix;
-}
-
-void multiplyMatrix(int **matrix_a, int **matrix_b, int **matrix_c) {
-	for (int i = 0; i < N; i++) {
-		for (int j = 0; j < N; j++) {
-			matrix_c[i][j] = 0;
-			for (int k = 0; k < N; k++) {
-				matrix_c[i][j] += matrix_a[i][k] * matrix_b[k][j];
-			}
-		}
-	}	
-}
-
-void printMatrix(int **matrix) {
-	for (int i = 0; i < N; i++) {
-		for (int j = 0; j < N; j++) {
-			printf("%d ", matrix[i][j]);
-		}
-		printf("\n");
-	}
-}
-
-void freeMatrix(int **matrix) {
-	for (int i = 0; i < N; i++) {
-		free(matrix[i]);
-	}
-
-	free(matrix);
-}
-
-int main() {
-	int **matrix_a = createMatrix(N, N); 
-	int **matrix_b = createMatrix(N, N); 
+int main(void)
+{
+	int **matrix_a = createMatrix(N, N);
+	int **matrix_b = createMatrix(N, N);
 	int **matrix_c = createMatrix(N, N);
+	struct timespec t0, t1;
 
-	for (int i = 0; i < N; i++) {
-		for (int j = 0; j < N; j++) {
-			matrix_a[i][j] = -1;
-			matrix_b[i][j] = -2;
-		}
+	if (matrix_a == NULL || matrix_b == NULL || matrix_c == NULL) {
+		fprintf(stderr, "case2: falha ao alocar as matrizes\n");
+		return 1;
 	}
 
-	multiplyMatrix(matrix_a, matrix_b, matrix_c);		
-	
+	/* Preenchimento de A e B e zeragem de C acontecem ANTES do relogio.
+	 * Isso mantem fora da regiao cronometrada tanto o custo do gerador
+	 * pseudoaleatorio quanto as faltas de pagina de primeiro toque, que
+	 * diferem entre as duas familias de alocacao e seriam cobradas do
+	 * Fator 2 pelo motivo errado. */
+	fillMatrix(matrix_a, SEED_A);
+	fillMatrix(matrix_b, SEED_B);
+	zeroMatrix(matrix_c);
+
+	clock_gettime(CLOCK_MONOTONIC, &t0);
+	multiplyMatrix(matrix_a, matrix_b, matrix_c);
+	clock_gettime(CLOCK_MONOTONIC, &t1);
+
+#ifdef VERIFICA
+	/* Build de verificacao de equivalencia: imprime apenas a matriz, para
+	 * que o md5sum da saida seja deterministico. A linha CSV carrega o
+	 * tempo medido, que varia de execucao para execucao. */
+	(void)t0;
+	(void)t1;
 	printMatrix(matrix_c);
+#else
+	{
+		long long tempo_ns = (t1.tv_sec - t0.tv_sec) * 1000000000LL
+		                   + (t1.tv_nsec - t0.tv_nsec);
+
+		printf("%d,%s,%s,%d,%d,%d,%lld,%lld\n",
+		       2, "base", "dinamica", matrixDim(),
+		       0, 1,
+		       tempo_ns, checksumMatrix(matrix_c));
+	}
+#endif
 
 	freeMatrix(matrix_a);
 	freeMatrix(matrix_b);
 	freeMatrix(matrix_c);
+
 	return 0;
 }
-

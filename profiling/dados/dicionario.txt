@@ -1,0 +1,46 @@
+Dicionario de colunas de dados_brutos.csv
+
+ 1 ordem_execucao       int 1..80  posicao na ordem randomizada. Base dos
+                        diagnosticos de independencia dos residuos.
+ 2 caso                 int 1..8       identidade do binario.
+ 3 tecnica              texto          Fator 1: base, interchange, unrolling, tiling.
+ 4 alocacao             texto          Fator 2: estatica, dinamica.
+ 5 n                    int            ordem da matriz, REPORTADA PELA BIBLIOTECA via
+                        matrixDim(), nao pelo macro N visto por main. Assim o
+                        valor registrado nao pode mentir se alguma unidade de
+                        traducao tiver sido compilada com um N diferente.
+ 6 T_tecnica            int 1..4       codigo do fator de 4 niveis.
+ 7 A_alocacao           int -1 ou +1   contraste: -1 estatica, +1 dinamica.
+ 8 B_fat1               -1, +1 ou NA   -1 base, +1 interchange, NA fora.
+                        Define o subconjunto do Fatorial 1 (cache).
+ 9 B_fat2               -1, +1 ou NA   -1 base, +1 unrolling, NA fora.
+                        Define o subconjunto do Fatorial 2 (branch).
+10 replica              int 1..10
+11 retentativas         int            tentativas descartadas nesta medicao.
+12 tempo_kernel_ns      ns, inteiro    clock_gettime(CLOCK_MONOTONIC) apenas em volta
+                        do kernel. RESPOSTA PRIMARIA. Inteiro e nao float de
+                        proposito: sob LC_NUMERIC=pt_BR qualquer %f no caminho
+                        de dados e risco de virgula decimal.
+13 perf_task_clock_ms   ms             task-clock do processo inteiro, incluindo malloc,
+                        preenchimento, checksum e, nos casos dinamicos, mil
+                        chamadas de free. Secundaria.
+14 perf_duration_ns     ns             duration_time, wall clock do processo. Secundaria.
+15 l1d_loads            contagem       loads de L1d.
+16 l1d_load_misses      contagem       misses de load de L1d.
+17 branch_instructions  contagem       instrucoes de branch.
+18 branch_misses        contagem       branches mal preditos.
+19 checksum             int64          soma dos N^2 elementos de C. Identico nas
+                        80 linhas, prova que os oito kernels calculam o mesmo produto.
+20 perf_escala_min_pct  %              minimo do percentual de tempo com contador ativo
+                        entre os quatro eventos de hardware. Deve ser 100,00.
+                        Valor abaixo disso significa multiplexacao, e um valor
+                        multiplexado e extrapolacao e nao medicao.
+
+Taxas derivadas NAO ficam neste arquivo. Sao calculadas em analise/analise.R:
+  taxa_l1d_miss    = l1d_load_misses / l1d_loads
+  taxa_branch_miss = branch_misses / branch_instructions
+O arquivo bruto guarda apenas medicao. Mudar a definicao de uma taxa passa a
+ser uma linha no R em vez de uma recoleta.
+
+Conjunto de eventos usado: A
+Eventos de hardware       : cpu_core/L1-dcache-loads/,cpu_core/L1-dcache-load-misses/,cpu_core/branch-instructions/,cpu_core/branch-misses/

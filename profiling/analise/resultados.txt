@@ -1,0 +1,551 @@
+
+==============================================================================
+1. LEITURA E VERIFICACAO DE INTEGRIDADE
+==============================================================================
+Medicoes                          : 80
+Celulas do planejamento           : 8
+Replicas por celula               : 10
+Checksums distintos               : 1
+Valor do checksum                 : 16251093877953
+Ordem da matriz (n) distinta      : 1 valor(es), n = 1000
+Escala minima de contador (%)     : 100.00
+Retentativas totais               : 0
+Execucoes com CPU < parede        : 0 de 80 (processo desescalonado)
+
+Um unico valor de checksum nas 80 medicoes comprova que as oito variantes
+de codigo calculam exatamente o mesmo produto matricial, portanto a
+comparacao entre celulas e valida. A prova independente e mais forte esta
+em dados/verificacao_matriz.txt, que compara o md5sum dos 1.000.000 de
+elementos de C e nao apenas um digest de 64 bits deles.
+
+Escala de contador em 100% em todas as linhas comprova que nenhum valor
+sofreu multiplexacao. Um contador multiplexado e escalado pelo perf e o
+numero resultante e extrapolacao, nao medicao.
+
+==============================================================================
+2. COLUNAS DERIVADAS
+==============================================================================
+As taxas nascem aqui e nao no shell. O arquivo bruto guarda apenas
+medicao, e assim mudar a definicao de uma taxa e uma linha em R em vez
+de uma recoleta de 8 minutos. As taxas ficam como fracao em (0,1) e nao
+como percentual, para a transformacao logit se aplicar sem reescalar.
+
+==============================================================================
+3. ESTATISTICA DESCRITIVA E IC 95% POR EXPERIMENTO
+==============================================================================
+t(0,975; 9) usado no IC por celula : 2.262157
+
+O enunciado pede media e IC de 95% para cada metrica em cada um dos oito
+experimentos, portanto o intervalo e o t por celula, media +- t*s/sqrt(n),
+com n = 10 e 9 graus de liberdade. Um intervalo com MSE agrupado seria mais
+estreito, porem valido apenas sob homocedasticidade, que a secao 7 rejeita.
+As figuras usam o intervalo por celula.
+
+3.1 Tempo do kernel (ms)
+------------------------
+ caso     tecnica     aloc    media     sd cv_pct   ic_inf   ic_sup      min
+    1        base estatica 4319.418  99.27  2.298 4248.403 4390.434 4236.688
+    2        base dinamica 5468.971 279.80  5.115 5268.848 5669.094 5196.158
+    3 interchange estatica 3180.494  48.96  1.539 3145.470 3215.519 3113.459
+    4 interchange dinamica 4173.831 194.80  4.666 4034.506 4313.156 4011.602
+    5   unrolling estatica 4509.809 183.00  4.059 4378.865 4640.753 4262.627
+    6   unrolling dinamica 5364.751 233.40  4.350 5197.798 5531.704 5123.677
+    7      tiling estatica 4052.427  96.66  2.385 3983.281 4121.573 3958.220
+    8      tiling dinamica 5021.304 144.70  2.881 4917.804 5124.804 4867.423
+      max
+ 4583.317
+ 6006.643
+ 3271.028
+ 4505.394
+ 4784.937
+ 5844.361
+ 4300.821
+ 5344.095
+
+3.2 L1-dcache-loads
+-------------------
+ caso     tecnica     aloc       media     sd cv_pct      ic_inf      ic_sup
+    1        base estatica 17050980000 249100  0.001 17050800000 17051160000
+    2        base dinamica 21057730000 649200  0.003 21057270000 21058200000
+    3 interchange estatica 17048740000 106200  0.001 17048660000 17048820000
+    4 interchange dinamica 21055190000 438900  0.002 21054870000 21055500000
+    5   unrolling estatica 15803440000 403400  0.003 15803150000 15803730000
+    6   unrolling dinamica 19809530000 476600  0.002 19809190000 19809870000
+    7      tiling estatica 18245810000 192700  0.001 18245670000 18245950000
+    8      tiling dinamica 22252190000 333500  0.001 22251960000 22252430000
+         min         max
+ 17050800000 17051640000
+ 21057060000 21058990000
+ 17048570000 17048950000
+ 21054810000 21056010000
+ 15802910000 15804040000
+ 19809040000 19810510000
+ 18245620000 18246310000
+ 22251830000 22252900000
+
+3.3 L1-dcache-load-misses
+-------------------------
+ caso     tecnica     aloc     media      sd cv_pct    ic_inf    ic_sup
+    1        base estatica 649961800 1438000  0.221 648932800 650990800
+    2        base dinamica 136295500 3535000  2.594 133766300 138824600
+    3 interchange estatica   3550870  432300 12.174   3241645   3860096
+    4 interchange dinamica   3535112  197700  5.591   3393718   3676505
+    5   unrolling estatica 457904300 1729000  0.378 456667500 459141100
+    6   unrolling dinamica 176551900 3037000  1.720 174379100 178724800
+    7      tiling estatica   2498261   51160  2.048   2461665   2534858
+    8      tiling dinamica   2511445   70200  2.795   2461224   2561665
+       min       max
+ 647752100 652177200
+ 130644900 142414900
+   2605548   4122159
+   3068740   3753738
+ 455465900 460550600
+ 172939700 183954500
+   2439449   2578231
+   2417017   2606792
+
+3.4 branch-instructions
+-----------------------
+ caso     tecnica     aloc      media     sd cv_pct     ic_inf     ic_sup
+    1        base estatica 1019024000 172700  0.017 1018900000 1019147000
+    2        base dinamica 1020835000 435200  0.043 1020524000 1021146000
+    3 interchange estatica 1017582000  68120  0.007 1017533000 1017631000
+    4 interchange dinamica 1019196000 282400  0.028 1018994000 1019398000
+    5   unrolling estatica  271328400 271300  0.100  271134300  271522400
+    6   unrolling dinamica  272709800 308900  0.113  272488800  272930700
+    7      tiling estatica 1114866000 124500  0.011 1114777000 1114955000
+    8      tiling dinamica 1116441000 222900  0.020 1116282000 1116601000
+        min        max
+ 1018877000 1019474000
+ 1020382000 1021678000
+ 1017474000 1017716000
+ 1018940000 1019752000
+  270983100  271719300
+  272403400  273335200
+ 1114748000 1115190000
+ 1116202000 1116918000
+
+3.5 branch-misses
+-----------------
+ caso     tecnica     aloc    media     sd cv_pct   ic_inf   ic_sup      min
+    1        base estatica  1041538   2177  0.209  1039981  1043094  1039044
+    2        base dinamica  1050580   4166  0.397  1047600  1053561  1046433
+    3 interchange estatica  1036500   1626  0.157  1035337  1037664  1034260
+    4 interchange dinamica  1043419   3867  0.371  1040653  1046186  1039645
+    5   unrolling estatica  1045566   3995  0.382  1042709  1048424  1039705
+    6   unrolling dinamica  1049235   3370  0.321  1046824  1051645  1045118
+    7      tiling estatica 32080210   4169  0.013 32077230 32083200 32072670
+    8      tiling dinamica  2181784 136000  6.235  2084467  2279101  1906978
+      max
+  1045121
+  1060618
+  1040031
+  1051284
+  1050820
+  1057138
+ 32086630
+  2361901
+
+3.6 Taxa de miss de L1d (fracao)
+--------------------------------
+ caso     tecnica     aloc        media        sd cv_pct       ic_inf
+    1        base estatica 0.0381187300 8.409e-05  0.221 0.0380585700
+    2        base dinamica 0.0064724670 1.679e-04  2.595 0.0063523260
+    3 interchange estatica 0.0002082777 2.536e-05 12.174 0.0001901396
+    4 interchange dinamica 0.0001678973 9.386e-06  5.590 0.0001611832
+    5   unrolling estatica 0.0289749800 1.092e-04  0.377 0.0288969000
+    6   unrolling dinamica 0.0089124740 1.534e-04  1.722 0.0088027180
+    7      tiling estatica 0.0001369225 2.803e-06  2.047 0.0001349173
+    8      tiling dinamica 0.0001128628 3.154e-06  2.794 0.0001106067
+       ic_sup          min          max
+ 0.0381788900 0.0379894800 0.0382485900
+ 0.0065926070 0.0062042090 0.0067631470
+ 0.0002264157 0.0001528290 0.0002417864
+ 0.0001746115 0.0001457499 0.0001782829
+ 0.0290530700 0.0288209600 0.0291413200
+ 0.0090222310 0.0087296950 0.0092862730
+ 0.0001389276 0.0001337006 0.0001413015
+ 0.0001151189 0.0001086202 0.0001171483
+
+3.7 Taxa de miss de branch (frac.)
+----------------------------------
+ caso     tecnica     aloc       media        sd cv_pct      ic_inf      ic_sup
+    1        base estatica 0.001022094 2.040e-06  0.200 0.001020634 0.001023553
+    2        base dinamica 0.001029137 3.686e-06  0.358 0.001026501 0.001031774
+    3 interchange estatica 0.001018591 1.535e-06  0.151 0.001017493 0.001019690
+    4 interchange dinamica 0.001023766 3.580e-06  0.350 0.001021205 0.001026327
+    5   unrolling estatica 0.003853503 1.253e-05  0.325 0.003844540 0.003862467
+    6   unrolling dinamica 0.003847435 9.376e-06  0.244 0.003840727 0.003854142
+    7      tiling estatica 0.028774960 3.958e-06  0.014 0.028772130 0.028777790
+    8      tiling dinamica 0.001954224 1.217e-04  6.229 0.001867142 0.002041307
+         min         max
+ 0.001019723 0.001025519
+ 0.001025221 0.001038114
+ 0.001016498 0.001021927
+ 0.001020209 0.001031231
+ 0.003833083 0.003873179
+ 0.003836655 0.003867552
+ 0.028767690 0.028780220
+ 0.001708389 0.002115227
+
+3.8 Coeficiente de variacao, panorama
+-------------------------------------
+            resposta cv_min  cv_max
+            tempo_ms 1.5394  5.1153
+           l1d_loads 0.0006  0.0031
+     l1d_load_misses 0.2213 12.1736
+ branch_instructions 0.0067  0.1133
+       branch_misses 0.0130  6.2353
+       taxa_l1d_miss 0.2206 12.1738
+    taxa_branch_miss 0.0138  6.2292
+
+Os contadores l1d_loads e branch_instructions sao funcao praticamente
+deterministica do fluxo de instrucoes executado, e o CV baixissimo deles
+confirma isso. A consequencia estatistica esta na secao 7: com resposta
+quase deterministica o MSE fica minusculo, o F fica enorme e todo p-valor
+sai abaixo de 2e-16. Significancia passa a ser garantida e portanto nao
+informativa, e o que interpreta o experimento e o tamanho de efeito e a
+alocacao percentual de variacao, nao a rejeicao de hipotese nula.
+
+==============================================================================
+4. DEFINICAO DOS DOIS SUBCONJUNTOS 2x2
+==============================================================================
+Fatorial 1 (cache) : casos 1,2,3,4, 40 linhas, resposta taxa_l1d_miss
+Fatorial 2 (branch): casos 1,2,5,6, 40 linhas, resposta taxa_branch_miss
+Codificacao: A_alocacao -1 estatica, +1 dinamica.
+             B -1 base, +1 a tecnica sob teste.
+
+Declaracao necessaria: os dois fatoriais reusam os casos 1 e 2 como nivel
+base, portanto compartilham 20 das 40 observacoes e NAO sao estatisticamente
+independentes. Isso e inerente ao desenho pedido pela atividade e nao um
+erro, mas os dois conjuntos de p-valores nao podem ser citados como
+evidencia independente um do outro.
+
+==============================================================================
+6. FATORIAL 1: Alocacao x interchange, resposta taxa_l1d_miss
+==============================================================================
+
+6.1 Medias das quatro celulas (fracao de miss de L1d)
+-----------------------------------------------------
+ A_alocacao alocacao  B     tecnica        media
+         -1 estatica -1        base 0.0381187300
+          1 dinamica -1        base 0.0064724670
+         -1 estatica  1 interchange 0.0002082777
+          1 dinamica  1 interchange 0.0001678973
+
+6.2 Coeficientes do modelo e IC 95%
+-----------------------------------
+q0 (media global)                : 0.011241843
+Erro padrao dos efeitos (s_q)    : 1.50017e-05
+t(0,975; 36)                     : 2.028094
+ efeito           q      ic_inf      ic_sup signif
+      A -0.00792166 -0.00795209 -0.00789124    sim
+      B -0.01105380 -0.01108420 -0.01102330    sim
+     AB  0.00790147  0.00787105  0.00793190    sim
+Modelo: y = 0.0112418 -0.00792166*xA -0.0110538*xB +0.00790147*xA*xB + e
+q0 confere com a media das quatro medias de celula: 
+  q0 = 0.01124184302, media das celulas = 0.01124184302
+
+6.3 Alocacao de variacao
+------------------------
+           fonte          SS     pct
+    A (alocacao) 2.51011e-03 25.3670
+ B (interchange) 4.88742e-03 49.3919
+  AB (interacao) 2.49733e-03 25.2378
+            Erro 3.24072e-07  0.0033
+Soma dos percentuais             : 100.000000
+SS_total                         : 0.00989518
+
+6.4 Tabela ANOVA
+----------------
+           fonte gl          SS          MS      F         p
+    A (alocacao)  1 2.51011e-03 2.51011e-03 278839 1.309e-71
+ B (interchange)  1 4.88742e-03 4.88742e-03 542927 8.098e-77
+  AB (interacao)  1 2.49733e-03 2.49733e-03 277420 1.435e-71
+        Residuos 36 3.24072e-07 9.00199e-09     NA        NA
+Escrituracao de gl: 1 + 1 + 1 + 36 = 39 = N - 1
+
+As tres provas de consistencia passaram: as somas de quadrados da matriz
+de sinais coincidem com as de aov(), as somas sao aditivas e portanto os
+percentuais fecham em 100, e a rota independente pelas medias marginais
+reproduz SS_A e SS_B. Tres rotas concordando e prova. Uma rota seria
+apenas afirmacao.
+
+==============================================================================
+7. FATORIAL 2: Alocacao x unrolling, resposta taxa_branch_miss
+==============================================================================
+
+7.1 Medias das quatro celulas (fracao de miss de branch)
+--------------------------------------------------------
+ A_alocacao alocacao  B   tecnica       media
+         -1 estatica -1      base 0.001022094
+          1 dinamica -1      base 0.001029137
+         -1 estatica  1 unrolling 0.003853503
+          1 dinamica  1 unrolling 0.003847435
+
+7.2 Coeficientes do modelo e IC 95%
+-----------------------------------
+q0 (media global)                : 0.0024380422
+Erro padrao dos efeitos (s_q)    : 1.28126e-06
+t(0,975; 36)                     : 2.028094
+ efeito            q       ic_inf       ic_sup signif
+      A  2.43836e-07 -2.35467e-06  2.84234e-06    nao
+      B  1.41243e-03  1.40983e-03  1.41503e-03    sim
+     AB -3.27803e-06 -5.87653e-06 -6.79523e-07    sim
+Modelo: y = 0.00243804 +2.43836e-07*xA +0.00141243*xB -3.27803e-06*xA*xB + e
+q0 confere com a media das quatro medias de celula: 
+  q0 = 0.002438042216, media das celulas = 0.002438042216
+
+7.3 Alocacao de variacao
+------------------------
+          fonte          SS     pct
+   A (alocacao) 2.37825e-12  0.0000
+  B (unrolling) 7.97980e-05 99.9965
+ AB (interacao) 4.29819e-10  0.0005
+           Erro 2.36393e-09  0.0030
+Soma dos percentuais             : 100.000000
+SS_total                         : 7.98008e-05
+
+7.4 Tabela ANOVA
+----------------
+          fonte gl          SS          MS           F         p
+   A (alocacao)  1 2.37825e-12 2.37825e-12 3.62181e-02 8.501e-01
+  B (unrolling)  1 7.97980e-05 7.97980e-05 1.21524e+06 4.075e-83
+ AB (interacao)  1 4.29819e-10 4.29819e-10 6.54567e+00 1.487e-02
+       Residuos 36 2.36393e-09 6.56646e-11          NA        NA
+Escrituracao de gl: 1 + 1 + 1 + 36 = 39 = N - 1
+
+As tres provas de consistencia passaram: as somas de quadrados da matriz
+de sinais coincidem com as de aov(), as somas sao aditivas e portanto os
+percentuais fecham em 100, e a rota independente pelas medias marginais
+reproduz SS_A e SS_B. Tres rotas concordando e prova. Uma rota seria
+apenas afirmacao.
+
+==============================================================================
+8. VERIFICACAO DOS PRESSUPOSTOS
+==============================================================================
+
+8.1 Fatorial 1 (taxa_l1d_miss)
+------------------------------
+Normalidade  Shapiro-Wilk W      : 0.893798   p = 0.001268
+Homoced.     Bartlett K2         : 54.7533    p = 7.751e-12
+Homoced.     Fligner-Killeen     : 19.8511    p = 0.0001822
+Homoced.     razao max/min var   : 320.2
+Homoced.     cor(media, sd)      : 0.2751
+Independ.    autocorr. defas. 1  : -0.0120
+Independ.    Ljung-Box lag 5     : 8.6890    p = 0.1221
+Independ.    Durbin-Watson       : 1.9948  (2 = sem autocorrelacao)
+
+Alinhamento entre coluna de sinal e ordem de execucao:
+ coluna       r      p alinhado
+      A -0.1283 0.4302      nao
+      B -0.0362 0.8246      nao
+     AB  0.1677 0.3009      nao
+Nenhuma coluna de sinal esta alinhada com a ordem de execucao.
+Portanto a deriva temporal entra no TERMO DE ERRO e nao enviesa as
+estimativas de efeito: ela infla o MSE, o que torna os testes F
+conservadores e nao otimistas.
+
+8.2 Fatorial 2 (taxa_branch_miss)
+---------------------------------
+Normalidade  Shapiro-Wilk W      : 0.941344   p = 0.03839
+Homoced.     Bartlett K2         : 27.2771    p = 5.15e-06
+Homoced.     Fligner-Killeen     : 17.3010    p = 0.0006128
+Homoced.     razao max/min var   : 37.73
+Homoced.     cor(media, sd)      : 0.9556
+Independ.    autocorr. defas. 1  : 0.0591
+Independ.    Ljung-Box lag 5     : 6.8525    p = 0.2318
+Independ.    Durbin-Watson       : 1.8764  (2 = sem autocorrelacao)
+
+Alinhamento entre coluna de sinal e ordem de execucao:
+ coluna       r       p alinhado
+      A  0.0070 0.96590      nao
+      B -0.1664 0.30480      nao
+     AB  0.2760 0.08473      nao
+Nenhuma coluna de sinal esta alinhada com a ordem de execucao.
+Portanto a deriva temporal entra no TERMO DE ERRO e nao enviesa as
+estimativas de efeito: ela infla o MSE, o que torna os testes F
+conservadores e nao otimistas.
+
+Leitura honesta. Com dez replicas por celula num notebook com governor
+powersave e faixa de 0,4 a 5,4 GHz, a expectativa e que homocedasticidade
+e normalidade falhem. Normalidade falha nos contadores pelo motivo oposto
+ao usual: eles sao quase deterministicos, os residuos ficam quase discretos
+e o Shapiro-Wilk sinaliza isso com forca. Com desenho balanceado as
+ESTIMATIVAS de efeito sao nao viesadas qualquer que seja a distribuicao do
+erro. A normalidade afeta apenas a distribuicao de referencia, e a secao 10
+a substitui por permutacao, sem pressuposto nenhum.
+
+==============================================================================
+9. REANALISE EM ESCALA LOGIT
+==============================================================================
+As duas respostas sao proporcoes em (0,1), portanto o estabilizador de
+variancia natural e o logit, log(p/(1-p)), e nao o log. A tabela abaixo
+poe as duas escalas lado a lado, e o texto do relatorio declara qual
+escala esta citando.
+
+9.1 Fatorial 1: influencia percentual, bruta contra logit
+---------------------------------------------------------
+           fonte pct_bruta pct_logit
+    A (alocacao)   25.3670    4.7140
+ B (interchange)   49.3919   92.2390
+  AB (interacao)   25.2378    2.9570
+            Erro    0.0033    0.0901
+Shapiro-Wilk dos residuos: bruta p = 0.001268, logit p = 8.518e-07
+Fligner-Killeen          : bruta p = 0.0001822, logit p = 0.0004926
+Ranking dos efeitos bruta: B > A > AB
+Ranking dos efeitos logit: B > A > AB
+O ranking dos efeitos NAO muda entre as escalas.
+
+9.2 Fatorial 2: influencia percentual, bruta contra logit
+---------------------------------------------------------
+          fonte pct_bruta pct_logit
+   A (alocacao)    0.0000    0.0004
+  B (unrolling)   99.9965   99.9969
+ AB (interacao)    0.0005    0.0010
+           Erro    0.0030    0.0017
+Shapiro-Wilk dos residuos: bruta p = 0.03839, logit p = 0.03445
+Fligner-Killeen          : bruta p = 0.0006128, logit p = 0.4089
+Ranking dos efeitos bruta: B > AB > A
+Ranking dos efeitos logit: B > AB > A
+O ranking dos efeitos NAO muda entre as escalas.
+
+==============================================================================
+10. TESTE DE PERMUTACAO RESTRITA (FREEDMAN-LANE)
+==============================================================================
+Permuta os residuos do modelo REDUZIDO, ou seja do modelo sem o efeito
+sob teste mas com todos os outros. Permutar a resposta crua estaria
+errado: a hipotese nula absorveria a variancia dos outros efeitos.
+Remove a dependencia de normalidade do veredito de significancia.
+
+10.1 Fatorial 1 (taxa_l1d_miss)
+-------------------------------
+ efeito   p_anova    p_perm signif_ic signif_prm
+      A 1.309e-71 9.999e-05       sim        sim
+      B 8.098e-77 9.999e-05       sim        sim
+     AB 1.435e-71 9.999e-05       sim        sim
+Concordancia entre IC e permutacao: 3 de 3 efeitos
+Maior p de permutacao            : 0,0001
+
+10.2 Fatorial 2 (taxa_branch_miss)
+----------------------------------
+ efeito   p_anova    p_perm signif_ic signif_prm
+      A 8.501e-01 8.472e-01       nao        nao
+      B 4.075e-83 9.999e-05       sim        sim
+     AB 1.487e-02 1.210e-02       sim        sim
+Concordancia entre IC e permutacao: 3 de 3 efeitos
+Maior p de permutacao            : 0,8472
+
+==============================================================================
+11. RESPOSTA DE TEMPO DE EXECUCAO
+==============================================================================
+
+11.1 Comparacao entre os oito experimentos
+------------------------------------------
+ Df    Sum Sq     Mean Sq F value      Pr(>F)
+  7 0.4114760 0.058782300 246.729 1.14645e-47
+ 72 0.0171537 0.000238246      NA          NA
+Modelo em log10 do tempo porque a variabilidade do tempo cresce com a
+media, ver a figura media_vs_sd.pdf.
+
+11.2 Comparacoes par a par de Tukey (family-wise 95%)
+-----------------------------------------------------
+ par  dif_log10   p_ajust signif
+ 2-1  0.1020900 0.000e+00    sim
+ 3-1 -0.1328800 0.000e+00    sim
+ 4-1 -0.0152050 3.625e-01    nao
+ 5-1  0.0185130 1.451e-01    nao
+ 6-1  0.0938650 0.000e+00    sim
+ 7-1 -0.0277180 3.436e-03    sim
+ 8-1  0.0653330 0.000e+00    sim
+ 3-2 -0.2349700 0.000e+00    sim
+ 4-2 -0.1172900 0.000e+00    sim
+ 5-2 -0.0835760 0.000e+00    sim
+ 6-2 -0.0082236 9.319e-01    nao
+ 7-2 -0.1298100 0.000e+00    sim
+ 8-2 -0.0367560 2.936e-05    sim
+ 4-3  0.1176700 0.000e+00    sim
+ 5-3  0.1513900 0.000e+00    sim
+ 6-3  0.2267400 0.000e+00    sim
+ 7-3  0.1051600 0.000e+00    sim
+ 8-3  0.1982100 0.000e+00    sim
+ 5-4  0.0337180 1.581e-04    sim
+ 6-4  0.1090700 0.000e+00    sim
+ 7-4 -0.0125130 6.137e-01    nao
+ 8-4  0.0805380 0.000e+00    sim
+ 6-5  0.0753530 0.000e+00    sim
+ 7-5 -0.0462310 1.096e-07    sim
+ 8-5  0.0468200 7.651e-08    sim
+ 7-6 -0.1215800 0.000e+00    sim
+ 8-6 -0.0285330 2.315e-03    sim
+ 8-7  0.0930510 0.000e+00    sim
+Tukey e o que legitima qualquer afirmacao de que uma tecnica ganha de
+outra lida no grafico de barras: ele corrige para as 28 comparacoes.
+
+11.3 Modelo fatorial completo 4x2 (suplemento)
+----------------------------------------------
+ Df     Sum Sq     Mean Sq   F value      Pr(>F)
+  3 0.21845100 0.072816900 305.63800 7.20142e-41
+  1 0.18833800 0.188338000 790.52100 1.46698e-40
+  3 0.00468693 0.001562310   6.55755 5.55048e-04
+ 72 0.01715370 0.000238246        NA          NA
+      fonte gl         SS     pct
+       fTec  3 0.21845100 50.9649
+      fAloc  1 0.18833800 43.9396
+ fTec:fAloc  3 0.00468693  1.0935
+  Residuals 72 0.01715370  4.0020
+Soma dos percentuais: 100.000000
+Este modelo 4x2 esta alem dos dois 2x2 pedidos pela atividade e entra
+como suplemento, porque usa os quatro niveis de Tecnica ao mesmo tempo.
+
+11.4 Ganho de cada tecnica sobre a base, por alocacao
+-----------------------------------------------------
+     tecnica estatica dinamica ganho_est ganho_din
+        base  4319.42  5468.97    1.0000     1.000
+ interchange  3180.49  4173.83    1.3580     1.310
+      tiling  4052.43  5021.30    1.0660     1.089
+   unrolling  4509.81  5364.75    0.9578     1.019
+Razao media dinamica/estatica: 1.2470
+
+==============================================================================
+12. FIGURAS
+==============================================================================
+Figuras geradas (11):
+  boxplot_tempo.pdf
+  contadores_barras.pdf
+  interacao_fat1.pdf
+  interacao_fat2.pdf
+  media_vs_sd.pdf
+  ordem_execucao.pdf
+  pareto_influencia.pdf
+  residuos_fat1.pdf
+  residuos_fat2.pdf
+  taxas_barras.pdf
+  tempo_barras.pdf
+
+==============================================================================
+13. TABELAS E MACROS PARA O RELATORIO
+==============================================================================
+
+Validacao cruzada dos nomes de evento (razao alias/nativo): 1,0000, 1,3050, 1,0000, 1,0335
+
+11.5 Diferenca de loads entre alocacoes, por tecnica
+----------------------------------------------------
+     tecnica delta_1e9
+        base    4.0068
+ interchange    4.0064
+   unrolling    4.0061
+      tiling    4.0064
+Media: 4.0064 e9, amplitude: 0.0007 e9
+Constancia dessa diferenca entre as quatro tecnicas indica que ela e
+estrutural, vinda da indirecao de ponteiro, e nao do padrao de acesso.
+Macros geradas                    : 104
+Nomes duplicados                  : 0
+Nomes invalidos em TeX (nao-letras) : 0
+Arquivos em analise/tex/: macros.tex, tabela_experimentos.tex,
+tabela_fatorial1.tex, tabela_fatorial2.tex
+
+==============================================================================
+FIM
+==============================================================================
+Resultados completos em /home/samuel/personal/dev-cod-otimizado/optimized-development/profiling/analise/resultados.txt

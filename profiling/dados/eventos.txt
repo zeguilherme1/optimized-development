@@ -1,0 +1,56 @@
+Sondagem de nomenclatura de evento do perf
+Data     : 2026-09-09T13:08:56-03:00
+Maquina  : Intel(R) Core(TM) 7 150U
+perf     : perf version 6.8.12
+
+--- conjunto A ---
+cpu_core/L1-dcache-loads/,cpu_core/L1-dcache-load-misses/,cpu_core/branch-instructions/,cpu_core/branch-misses/,task-clock,duration_time
+# started on Wed Sep  9 13:08:56 2026
+
+613590767;;cpu_core/L1-dcache-loads/;338266244;100.00;1.814;G/sec
+53740;;cpu_core/L1-dcache-load-misses/;338266244;100.00;0.01;of all L1-dcache accesses
+475110171;;cpu_core/branch-instructions/;338266244;100.00;1.405;G/sec
+22014;;cpu_core/branch-misses/;338266244;100.00;65.079;K/sec
+338.27;msec;task-clock;338266244;100.00;1.005;CPUs utilized
+336505099;ns;duration_time;336505099;100.00;994.794;M/sec
+veredito: ACEITO
+valores: 613590767,53740,475110171,22014,338.27,336505099,100.00
+
+--- mapeamento resolvido (perf stat -vv) ---
+perf_event_attr:
+  type                             0 (PERF_TYPE_HARDWARE)
+  config                           0xa00000000
+sys_perf_event_open: pid 0  cpu -1  group_fd -1  flags 0x8 = 3
+perf_event_attr:
+  type                             0 (PERF_TYPE_HARDWARE)
+  config                           0x400000000
+sys_perf_event_open: pid 0  cpu -1  group_fd -1  flags 0x8 = 3
+perf_event_attr:
+  type                             3 (PERF_TYPE_HW_CACHE)
+  config                           0x400000000 (PERF_COUNT_HW_CACHE_RESULT_ACCESS | PERF_COUNT_HW_CACHE_OP_READ | PERF_COUNT_HW_CACHE_L1D)
+  sample_type                      IDENTIFIER
+sys_perf_event_open: pid 21511  cpu -1  group_fd -1  flags 0x8 = 3
+perf_event_attr:
+  type                             3 (PERF_TYPE_HW_CACHE)
+  config                           0x400010000 (PERF_COUNT_HW_CACHE_RESULT_MISS | PERF_COUNT_HW_CACHE_OP_READ | PERF_COUNT_HW_CACHE_L1D)
+  sample_type                      IDENTIFIER
+sys_perf_event_open: pid 21511  cpu -1  group_fd -1  flags 0x8 = 4
+perf_event_attr:
+  type                             4 (cpu_core)
+  config                           0xc4 (branch-instructions)
+  sample_type                      IDENTIFIER
+sys_perf_event_open: pid 21511  cpu -1  group_fd -1  flags 0x8 = 5
+perf_event_attr:
+  type                             4 (cpu_core)
+  config                           0xc5 (branch-misses)
+  sample_type                      IDENTIFIER
+sys_perf_event_open: pid 21511  cpu -1  group_fd -1  flags 0x8 = 7
+
+--- validacao cruzada das nomenclaturas ---
+conjunto A (aliases genericos) : 613560472,43706,475095768,20761,317.36,315494222,100.00
+conjunto B (eventos nativos)   : 613539074,33491,475082324,20088,317.20,315039328,100.00
+razao loads  A/B : 1.0000
+razao misses A/B : 1.3050
+razao brinst A/B : 1.0000
+razao brmiss A/B : 1.0335
+

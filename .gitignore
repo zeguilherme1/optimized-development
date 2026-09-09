@@ -53,3 +53,16 @@ dkms.conf
 
 # debug information files
 *.dwo
+
+# Profiling: binarios sem extensao (case1..case8) e saidas de execucao.
+# As regras acima cobrem *.o e *.out, mas nao binarios ELF sem extensao.
+profiling/experimento/bin/
+profiling/dados/perf/
+profiling/dados/SINTETICO_*
+
+# LaTeX build artifacts do relatorio
+*.aux
+*.toc
+*.synctex.gz
+profiling/relatorio.log
+profiling/relatorio.out

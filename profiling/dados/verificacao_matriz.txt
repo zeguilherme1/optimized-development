@@ -1,0 +1,16 @@
+Verificacao de equivalencia dos oito kernels
+Data                : 2026-09-09T12:40:17-03:00
+Metodo              : md5sum da matriz C completa (1.000.000 de elementos)
+Binarios            : /home/samuel/personal/dev-cod-otimizado/optimized-development/profiling/experimento/bin/verif/case1..case8, construidos com -DVERIFICA
+
+case1  79462e3db5f54ac9e244c13c4ca2c3b4
+case2  79462e3db5f54ac9e244c13c4ca2c3b4
+case3  79462e3db5f54ac9e244c13c4ca2c3b4
+case4  79462e3db5f54ac9e244c13c4ca2c3b4
+case5  79462e3db5f54ac9e244c13c4ca2c3b4
+case6  79462e3db5f54ac9e244c13c4ca2c3b4
+case7  79462e3db5f54ac9e244c13c4ca2c3b4
+case8  79462e3db5f54ac9e244c13c4ca2c3b4
+
+Faixa dos elementos : [13801317, 18561445], limite analitico [0, 65025000]
+RESULTADO           : OK, os oito kernels produzem a mesma matriz

@@ -1,0 +1,62 @@
+Ambiente experimental - profiling fatorial 4x2
+Data                 : 2026-09-09T13:08:57-03:00
+
+--- maquina ---
+Modelo de CPU        : Intel(R) Core(TM) 7 150U
+Nucleos / threads    : 10 nucleos / 12 threads
+Cache L1d            : 48K, 12 vias, linha de 64 B
+Cache L2             : 6.5 MiB (4 instances)
+Cache L3             : 12 MiB (1 instance)
+Memoria total        : 31Gi
+PMU cpu_core         : 0-3
+PMU cpu_atom         : 4-11
+PMU nome             : alderlake_hybrid
+SMT ativo            : 1
+Irmaos SMT da cpu0  : 0-1
+
+--- software ---
+Kernel               : Linux 6.8.0-136-generic
+Distribuicao         : Ubuntu 24.04.4 LTS
+gcc                  : gcc (Ubuntu 13.3.0-6ubuntu2~24.04.1) 13.3.0
+perf                 : perf version 6.8.12
+awk                  : GNU Awk 5.2.1, API 3.2, PMA Avon 8-g1, (GNU MPFR 4.2.1, GNU MP 6.3.0)
+LC_ALL usado         : C
+ulimit -s            : 8192 KiB
+
+--- estado de medicao ---
+perf_event_paranoid  : 1
+nmi_watchdog         : 1
+Governor             : powersave
+Freq min / max       : 400000 / 5400000 kHz
+EPP                  : power
+Freq antes da coleta : 501065 kHz
+Carga antes          : 0.92 0.78 0.62
+
+--- parametros do experimento ---
+N                    : 1000
+BLOCO                : 32
+UNROLL               : 4
+Replicas por celula  : 10
+Celulas              : 8
+Aquecimentos         : 1 por celula, descartado
+Semente da ordem     : 42
+CPU fixada           : 0 (taskset)
+CFLAGS               : -O0 -std=c11 -Wall -Wextra -Werror
+Conjunto de eventos  : A
+Eventos de hardware  : cpu_core/L1-dcache-loads/,cpu_core/L1-dcache-load-misses/,cpu_core/branch-instructions/,cpu_core/branch-misses/
+Eventos auxiliares   : task-clock,duration_time
+
+--- procedencia dos binarios ---
+9b7ab30539d20d006c313c57012ad887  case1
+cc881600b21a994daecdec6167ee798b  case2
+c9e7fdaeb08ca1de8ed45edd63d84ec0  case3
+ffba6d6e65337640bf4653fe15ba4f08  case4
+fab61675f056e96c3f3d8803a4d1f792  case5
+cfe2283c8cfe4f20562b6ce6fbf1bd1b  case6
+b95b72e4aaff9907f84c5ffe8046d25d  case7
+6b83892da52d0978d3cc561806fe5c9e  case8
+
+--- estado depois da coleta ---
+Freq depois          : 400147 kHz
+Carga depois         : 1.22 1.12 0.86
+Fim da coleta        : 2026-09-09T13:15:39-03:00

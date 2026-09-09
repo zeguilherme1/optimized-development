@@ -1,6 +1,24 @@
 #include <stdio.h>
-#include <stdlib.h>
-#include "utils.h"
+#include "utils_static.h"
+
+/* =========================================================================
+ * utils_static.c - kernels da familia de ALOCACAO ESTATICA
+ *
+ * Transliteracao mecanica de utils.c. Os quatro nests de laco sao identicos
+ * caractere por caractere aos da versao dinamica: a unica diferenca e o tipo
+ * do parametro, int matrix[N][N] em vez de int **matrix, e portanto o
+ * enderecamento. Isso e exatamente o Fator 2 do experimento e nada mais.
+ *
+ * Sobre a escolha do parametro. Em -O0 uma leitura de elemento custa:
+ *   int **m  na pilha  ->  carrega m, carrega m[i], carrega m[i][k]   = 3
+ *   int m[N][N]        ->  carrega m, carrega m[i][k] em base+i*4000  = 2
+ *   global lido direto ->  carrega m[i][k] em desloc. relativo a RIP  = 1
+ * A diferenca real entre as duas alocacoes e um load de ponteiro dependente
+ * mais a perda de contiguidade entre linhas. A forma de parametro, 2 contra
+ * 3, captura isso. A forma global, 1 contra 3, somaria uma segunda unidade de
+ * diferenca que e artefato de passagem de parametro e nao de alocacao,
+ * inflando o efeito principal do Fator 2 na metrica de loads.
+ * ========================================================================= */
 
 /* Corpo desenrolado escrito a mao para fator 4. Mudar UNROLL em
  * matrix_config.h sem reescrever o corpo daria um kernel silenciosamente
@@ -11,29 +29,7 @@ int matrixDim(void) {
 	return N;
 }
 
-int** createMatrix(int rows, int cols) {
-	int **matrix = (int**)malloc(rows * sizeof(int*));
-
-	if (matrix == NULL) {
-		return NULL;
-	}
-
-	for (int i = 0; i < rows; i++) {
-		matrix[i] = (int*)malloc(cols * sizeof(int));
-
-		if (matrix[i] == NULL) {
-			for (int j = 0; j < i; j++) {
-				free(matrix[j]);
-			}
-			free(matrix);
-			return NULL;
-		}
-	}
-
-	return matrix;
-}
-
-void fillMatrix(int **matrix, unsigned long long seed) {
+void fillMatrixStatic(int matrix[N][N], unsigned long long seed) {
 	unsigned long long state = seed;
 
 	for (int i = 0; i < N; i++) {
@@ -43,7 +39,7 @@ void fillMatrix(int **matrix, unsigned long long seed) {
 	}
 }
 
-void zeroMatrix(int **matrix) {
+void zeroMatrixStatic(int matrix[N][N]) {
 	for (int i = 0; i < N; i++) {
 		for (int j = 0; j < N; j++) {
 			matrix[i][j] = 0;
@@ -54,7 +50,7 @@ void zeroMatrix(int **matrix) {
 /* Nivel base do Fator 1: ordem i-j-k, sem transformacao.
  * O laco k percorre uma linha de A e uma COLUNA de B, com passo de 4000 B,
  * o que falha em quase todo acesso a L1. */
-void multiplyMatrix(int **matrix_a, int **matrix_b, int **matrix_c) {
+void multiplyMatrixStatic(int matrix_a[N][N], int matrix_b[N][N], int matrix_c[N][N]) {
 	for (int i = 0; i < N; i++) {
 		for (int j = 0; j < N; j++) {
 			for (int k = 0; k < N; k++) {
@@ -67,7 +63,7 @@ void multiplyMatrix(int **matrix_a, int **matrix_b, int **matrix_c) {
 /* Loop interchange: unica transformacao e trocar j e k, virando i-k-j.
  * Agora o laco interno percorre uma LINHA de B e uma linha de C, os dois
  * sequenciais, e a[i][k] fica invariante no laco interno. */
-void loopInterchangeMult(int **matrix_a, int **matrix_b, int **matrix_c) {
+void loopInterchangeMultStatic(int matrix_a[N][N], int matrix_b[N][N], int matrix_c[N][N]) {
 	for (int i = 0; i < N; i++) {
 		for (int k = 0; k < N; k++) {
 			for (int j = 0; j < N; j++) {
@@ -86,7 +82,7 @@ void loopInterchangeMult(int **matrix_a, int **matrix_b, int **matrix_c) {
  * Em N=1000 o resto tem zero iteracoes, mas a guarda existe para o kernel
  * estar correto em qualquer N, ao contrario do k += 2 sem guarda anterior,
  * que lia matrix_b[k+1][j] fora dos limites em N impar. */
-void loopUnrollingMult(int **matrix_a, int **matrix_b, int **matrix_c) {
+void loopUnrollingMultStatic(int matrix_a[N][N], int matrix_b[N][N], int matrix_c[N][N]) {
 	const int k_limit = N - (N % UNROLL);
 
 	for (int i = 0; i < N; i++) {
@@ -119,7 +115,7 @@ void loopUnrollingMult(int **matrix_a, int **matrix_b, int **matrix_c) {
  * As guardas i_max, j_max e k_max nao sao opcionais. 1000 % 32 = 8, logo o
  * ultimo bloco de cada dimensao tem largura 8, e um laco que fosse ate
  * ii + BLOCO escreveria 24 elementos alem do fim de todo bloco final. */
-void loopTilingMult(int **matrix_a, int **matrix_b, int **matrix_c) {
+void loopTilingMultStatic(int matrix_a[N][N], int matrix_b[N][N], int matrix_c[N][N]) {
 	for (int ii = 0; ii < N; ii += BLOCO) {
 		const int i_max = (ii + BLOCO < N) ? ii + BLOCO : N;
 
@@ -145,7 +141,7 @@ void loopTilingMult(int **matrix_a, int **matrix_b, int **matrix_c) {
  * 1e6 * 65025000 = 6,5e13, cerca de 30000x alem da faixa do int.
  * Chamada FORA da regiao cronometrada. Como toda a aritmetica e inteira, os
  * oito kernels devem produzir checksums bit a bit identicos, sem tolerancia. */
-long long checksumMatrix(int **matrix) {
+long long checksumMatrixStatic(int matrix[N][N]) {
 	long long soma = 0;
 
 	for (int i = 0; i < N; i++) {
@@ -157,19 +153,11 @@ long long checksumMatrix(int **matrix) {
 	return soma;
 }
 
-void printMatrix(int **matrix) {
+void printMatrixStatic(int matrix[N][N]) {
 	for (int i = 0; i < N; i++) {
 		for (int j = 0; j < N; j++) {
 			printf("%d ", matrix[i][j]);
 		}
 		printf("\n");
 	}
-}
-
-void freeMatrix(int **matrix) {
-	for (int i = 0; i < N; i++) {
-		free(matrix[i]);
-	}
-
-	free(matrix);
 }
