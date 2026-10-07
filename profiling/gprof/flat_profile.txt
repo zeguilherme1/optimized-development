@@ -1,0 +1,12 @@
+Flat profile:
+
+Each sample counts as 0.01 seconds.
+  %   cumulative   self              self     total           
+ time   seconds   seconds    calls   s/call   s/call  name    
+ 61.41     50.04    50.04       10     5.00     6.41  bubbleSort
+ 19.54     65.96    15.92       10     1.59     1.59  insertionSort
+ 17.27     80.03    14.07 1951105794     0.00     0.00  swap
+  1.38     81.15     1.12       30     0.04     0.04  clean_cache
+  0.45     81.52     0.37                             _init
+  0.07     81.58     0.06   405380     0.00     0.00  qsPartition
+  0.01     81.59     0.01       10     0.00     0.01  quickSort
